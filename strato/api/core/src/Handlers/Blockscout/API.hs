@@ -3,9 +3,15 @@
 
 module Handlers.Blockscout.API
   ( API
+  , server
   ) where
 
-import Data.Aeson (Value)
+import qualified Handlers.Blockscout.Blocks as Blocks
+import qualified Handlers.Blockscout.ChainInfo as ChainInfo
+import qualified Handlers.Blockscout.Logs as Logs
+import qualified Handlers.Blockscout.Receipts as Receipts
+import qualified Handlers.Blockscout.State as State
+import qualified Handlers.Blockscout.Transactions as Transactions
 import Servant
 
 -- This is an initial namespace scaffold for the private Blockscout-oriented API.
@@ -14,17 +20,19 @@ import Servant
 
 type API =
   "blockscout" :>
-    (    "chain-info" :> Get '[JSON] Value
-    :<|> "blocks" :> "by-tag" :> Capture "tag" String :> QueryParam "hydrated" Bool :> Get '[JSON] Value
-    :<|> "blocks" :> "range" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "blocks" :> "by-number" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "blocks" :> "by-hash" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "transactions" :> "by-hash" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "transactions" :> "count" :> "by-block-number" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "receipts" :> "by-block-number" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "receipts" :> "by-transaction-hash" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "logs" :> "search" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "state" :> "balances" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "state" :> "nonces" :> ReqBody '[JSON] Value :> Post '[JSON] Value
-    :<|> "state" :> "codes" :> ReqBody '[JSON] Value :> Post '[JSON] Value
+    (    ChainInfo.API
+    :<|> Blocks.API
+    :<|> Transactions.API
+    :<|> Receipts.API
+    :<|> Logs.API
+    :<|> State.API
     )
+
+server :: Monad m => ServerT API m
+server =
+  ChainInfo.server
+    :<|> Blocks.server
+    :<|> Transactions.server
+    :<|> Receipts.server
+    :<|> Logs.server
+    :<|> State.server
