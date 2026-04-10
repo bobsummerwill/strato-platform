@@ -44,6 +44,7 @@ import           Handlers.AccountInfo              hiding (API, server)
 import qualified Handlers.AccountInfo              as Account
 import           Handlers.BlkLast                  hiding (API, server)
 import qualified Handlers.Blockscout.API          as Blockscout
+import qualified Handlers.Blockscout.Logs         as BlockscoutLogs
 import qualified Handlers.BlkLast                  as BlkLast
 import           Handlers.Block                    hiding (API, server)
 import qualified Handlers.Block                    as Block
@@ -97,6 +98,7 @@ type MonadCoreAPI m =
     Selectable Block.BlocksFilterParams [Block] m,
     Selectable Keccak256 SourceMap m,
     Selectable Keccak256 [TransactionResult] m,
+    Selectable BlockscoutLogs.LogLookup [LogDB] m,
     Selectable Storage.StorageFilterParams [Storage.StorageAddress] m,
     Selectable Transaction.TxsFilterParams [RawTransaction] m,
     m `Outputs` [IngestEvent]

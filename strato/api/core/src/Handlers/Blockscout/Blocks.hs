@@ -1,12 +1,15 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Handlers.Blockscout.Blocks
   ( API
   , server
+  , fetchBlockByHash
+  , fetchBlockByNumber
+  , fetchBlocksInRange
   ) where
 
 import Blockchain.Data.Block (Block)
@@ -48,11 +51,7 @@ byTag tag hydrated = do
 
 byRange :: (Selectable BlocksFilterParams [Block] m) => RangeRequest -> m Value
 byRange RangeRequest{rangeFrom, rangeTo, rangeHydrated} = do
-  blocks <- map bPrimeToB <$> getBlockInfo' blocksFilterParams
-    { qbMinNumber = Just (fromIntegral rangeFrom)
-    , qbMaxNumber = Just (fromIntegral rangeTo)
-    , qbSortby = Just ASC
-    }
+  blocks <- fetchBlocksInRange rangeFrom rangeTo
   pure $ Mapper.blockBatchValue (hydratedOrTrue rangeHydrated) blocks
 
 byNumber :: (Selectable BlocksFilterParams [Block] m) => BlockNumbersRequest -> m Value
@@ -69,6 +68,14 @@ latestBlock :: (GetLastBlocks m, Monad m) => m (Maybe Block)
 latestBlock = do
   blocks <- getLastBlocks 1
   pure $ listToMaybe blocks
+
+fetchBlocksInRange :: (Selectable BlocksFilterParams [Block] m) => Integer -> Integer -> m [Block]
+fetchBlocksInRange fromBlock toBlock =
+  map bPrimeToB <$> getBlockInfo' blocksFilterParams
+    { qbMinNumber = Just (fromIntegral fromBlock)
+    , qbMaxNumber = Just (fromIntegral toBlock)
+    , qbSortby = Just ASC
+    }
 
 fetchBlockByNumber :: (Selectable BlocksFilterParams [Block] m) => Integer -> m (Maybe Block)
 fetchBlockByNumber blockNumber = do

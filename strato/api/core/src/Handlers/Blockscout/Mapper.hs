@@ -3,12 +3,16 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Handlers.Blockscout.Mapper
-  ( TxContext(..)
+  ( LogContext(..)
+  , TxContext(..)
   , blockBatchValue
   , blockValue
   , chainInfoValue
   , errorItem
+  , logValue
   , notImplementedCollection
+  , receiptCollectionValue
+  , receiptValue
   , stateCollectionValue
   , stateItemValue
   , transactionCountValue
@@ -25,25 +29,40 @@ import Blockchain.Data.BlockHeader
   , getBlockNonce
   , headerHash
   )
-import Blockchain.Data.DataDefs (RawTransaction(..))
+import Blockchain.Data.DataDefs (LogDB(..), RawTransaction(..), TransactionResult(..))
 import Blockchain.Data.Transaction
   ( Transaction(..)
   , transactionHash
   , whoSignedThisTransaction
   )
+import qualified Blockchain.Data.TransactionResultStatus as TRS
 import Blockchain.Strato.Model.Address (Address)
 import Blockchain.Strato.Model.Class (blockHash)
+import Blockchain.Strato.Model.ExtendedWord (Word256)
 import Blockchain.Strato.Model.Keccak256 (Keccak256, keccak256ToHex)
 import Data.Aeson
+import qualified Data.ByteString as BS
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import Data.List (sortOn)
+import Data.Maybe (catMaybes, listToMaybe)
 import qualified Data.Text as T
+import Text.Format (format)
+import Numeric (showHex)
 
 data TxContext = TxContext
   { txContextBlockHash :: Keccak256
   , txContextBlockNumber :: Integer
   , txContextIndex :: Int
+  }
+  deriving (Eq, Show)
+
+data LogContext = LogContext
+  { logContextBlockHash :: Keccak256
+  , logContextBlockNumber :: Integer
+  , logContextTransactionHash :: Keccak256
+  , logContextTransactionIndex :: Int
+  , logContextIndex :: Int
   }
   deriving (Eq, Show)
 
@@ -143,6 +162,45 @@ stateItemValue address requestedBlock value =
     , "value" .= value
     ]
 
+receiptCollectionValue :: [Value] -> [Value] -> [Value] -> Value
+receiptCollectionValue receipts logs errors =
+  object
+    [ "receipts" .= receipts
+    , "logs" .= logs
+    , "errors" .= errors
+    ]
+
+receiptValue :: TxContext -> Transaction -> TransactionResult -> Integer -> [Value] -> Value
+receiptValue TxContext{..} tx txResult cumulativeGasUsed logs =
+  object
+    [ "transaction_hash" .= hexKeccak (transactionResultTransactionHash txResult)
+    , "transaction_index" .= txContextIndex
+    , "block_hash" .= hexKeccak txContextBlockHash
+    , "block_number" .= txContextBlockNumber
+    , "cumulative_gas_used" .= cumulativeGasUsed
+    , "gas_used" .= gasUsed
+    , "gas_price" .= transactionGasPrice tx
+    , "created_contract_address_hash" .= fmap hexAddress (listToMaybe $ transactionResultContractsCreated txResult)
+    , "status" .= receiptStatus txResult
+    , "logs" .= logs
+    , "logs_bloom" .= zeroLogsBloom
+    ]
+  where
+    gasUsed = toInteger (transactionResultGasUsed txResult)
+
+logValue :: LogContext -> LogDB -> Value
+logValue LogContext{..} LogDB{logDBAddress, logDBTopic1, logDBTopic2, logDBTopic3, logDBTopic4, logDBTheData} =
+  object
+    [ "address_hash" .= hexAddress logDBAddress
+    , "topics" .= catMaybes (map (fmap hexWord256) [logDBTopic1, logDBTopic2, logDBTopic3, logDBTopic4])
+    , "data" .= hexBytes logDBTheData
+    , "block_hash" .= hexKeccak logContextBlockHash
+    , "block_number" .= logContextBlockNumber
+    , "transaction_hash" .= hexKeccak logContextTransactionHash
+    , "transaction_index" .= logContextTransactionIndex
+    , "index" .= logContextIndex
+    ]
+
 notImplementedCollection :: T.Text -> Value
 notImplementedCollection key =
   Object $ KeyMap.fromList
@@ -216,7 +274,26 @@ hexAddress address = T.pack $ "0x" ++ show address
 hexKeccak :: Keccak256 -> T.Text
 hexKeccak hashValue = T.pack $ "0x" ++ keccak256ToHex hashValue
 
+hexWord256 :: Word256 -> T.Text
+hexWord256 wordValue = T.pack $ "0x" ++ showHex wordValue ""
+
+hexBytes :: BS.ByteString -> T.Text
+hexBytes bytes = T.pack $ "0x" ++ format bytes
+
 transactionTypeFromRaw :: Maybe Address -> Maybe T.Text -> Int
 transactionTypeFromRaw Nothing _ = 0
 transactionTypeFromRaw _ (Just _) = 0
 transactionTypeFromRaw _ Nothing = 0
+
+transactionGasPrice :: Transaction -> Integer
+transactionGasPrice EthereumTX{gasPrice} = gasPrice
+transactionGasPrice MessageTX{} = 0
+transactionGasPrice ContractCreationTX{} = 0
+
+receiptStatus :: TransactionResult -> T.Text
+receiptStatus txResult
+  | transactionResultStatus txResult == Just TRS.Success = "success"
+  | otherwise = "failure"
+
+zeroLogsBloom :: T.Text
+zeroLogsBloom = "0x" <> T.replicate 512 "0"

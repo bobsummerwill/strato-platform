@@ -8,11 +8,14 @@ module Handlers.Blockscout.Types
   , TransactionHashesRequest(..)
   , StateLookup(..)
   , StateRequest(..)
+  , LogSearchRequest(..)
   , hydratedOrTrue
   ) where
 
 import Blockchain.Strato.Model.Address (Address)
+import Blockchain.Strato.Model.ExtendedWord (Word256)
 import Blockchain.Strato.Model.Keccak256 (Keccak256)
+import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
@@ -52,6 +55,15 @@ data StateRequest = StateRequest
   }
   deriving (Eq, Show, Generic)
 
+data LogSearchRequest = LogSearchRequest
+  { requestedLogFromBlock :: Maybe Integer
+  , requestedLogToBlock :: Maybe Integer
+  , requestedLogBlockHash :: Maybe Keccak256
+  , requestedLogAddresses :: Maybe [Address]
+  , requestedLogTopics :: Maybe [Maybe [Word256]]
+  }
+  deriving (Eq, Show, Generic)
+
 instance FromJSON RangeRequest where
   parseJSON = withObject "RangeRequest" $ \o ->
     RangeRequest
@@ -80,6 +92,19 @@ instance FromJSON StateLookup where
 
 instance FromJSON StateRequest where
   parseJSON = genericParseJSON jsonOptions
+
+instance FromJSON LogSearchRequest where
+  parseJSON = withObject "LogSearchRequest" $ \o ->
+    LogSearchRequest
+      <$> o .:? "from_block"
+      <*> o .:? "to_block"
+      <*> o .:? "block_hash"
+      <*> (o .:? "address" >>= traverse parseAddressField)
+      <*> o .:? "topics"
+    where
+      parseAddressField value =
+        (parseJSON value)
+          <|> fmap pure (parseJSON value)
 
 hydratedOrTrue :: Maybe Bool -> Bool
 hydratedOrTrue = fromMaybe True
