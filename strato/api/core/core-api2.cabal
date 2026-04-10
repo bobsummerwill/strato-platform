@@ -49,6 +49,7 @@ library
     , blockDB
     , blockapps-data
     , blockapps-datadefs
+    , blockapps-mpdbs
     , blockapps-vault-wrapper-api
     , blockapps-vault-wrapper-client
     , bytestring

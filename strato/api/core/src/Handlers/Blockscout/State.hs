@@ -11,10 +11,13 @@ module Handlers.Blockscout.State
   ) where
 
 import Blockchain.Data.DataDefs (AddressStateRef(..))
+import Blockchain.DB.CodeDB (HasCodeDB, getExternallyOwned)
 import Blockchain.Strato.Model.Address (Address)
 import Blockchain.Model.JsonBlock (AddressStateRef'(..))
 import Control.Monad.Change.Alter (Selectable)
 import Data.Aeson (Value)
+import qualified Data.Text as T
+import Text.Format (format)
 import Handlers.AccountInfo
   ( AccountsFilterParams(..)
   , accountsFilterParams
@@ -30,7 +33,7 @@ type API =
   :<|> "state" :> "codes" :> ReqBody '[JSON] StateRequest :> Post '[JSON] Value
   )
 
-server :: (Selectable AccountsFilterParams [AddressStateRef] m) => ServerT API m
+server :: (HasCodeDB m, Selectable AccountsFilterParams [AddressStateRef] m) => ServerT API m
 server = balances :<|> nonces :<|> codes
 
 balances :: (Selectable AccountsFilterParams [AddressStateRef] m) => StateRequest -> m Value
@@ -43,8 +46,10 @@ nonces StateRequest{requests} = do
   values <- mapM nonceValue requests
   pure $ Mapper.stateCollectionValue "nonces" values
 
-codes :: Monad m => StateRequest -> m Value
-codes _ = pure $ Mapper.notImplementedCollection "codes"
+codes :: (HasCodeDB m, Selectable AccountsFilterParams [AddressStateRef] m) => StateRequest -> m Value
+codes StateRequest{requests} = do
+  values <- mapM codeValue requests
+  pure $ Mapper.stateCollectionValue "codes" values
 
 balanceValue :: (Selectable AccountsFilterParams [AddressStateRef] m) => StateLookup -> m Value
 balanceValue StateLookup{addressHash, blockNumber} = do
@@ -57,6 +62,16 @@ nonceValue StateLookup{addressHash, blockNumber} = do
   account <- lookupAccount addressHash
   let nonce = maybe 0 addressStateRefNonce account
   pure $ Mapper.stateItemValue addressHash blockNumber nonce
+
+codeValue :: (HasCodeDB m, Selectable AccountsFilterParams [AddressStateRef] m) => StateLookup -> m Value
+codeValue StateLookup{addressHash, blockNumber} = do
+  account <- lookupAccount addressHash
+  code <- case account >>= addressStateRefCodeHash of
+    Nothing -> pure "0x"
+    Just codePtr -> do
+      bytes <- getExternallyOwned codePtr
+      pure $ T.pack $ "0x" ++ format bytes
+  pure $ Mapper.codeItemValue addressHash blockNumber code
 
 lookupAccount :: (Selectable AccountsFilterParams [AddressStateRef] m) => Address -> m (Maybe AddressStateRef)
 lookupAccount address = do

@@ -8,6 +8,7 @@ module Handlers.Blockscout.Mapper
   , blockBatchValue
   , blockValue
   , chainInfoValue
+  , codeItemValue
   , errorItem
   , logValue
   , notImplementedCollection
@@ -156,6 +157,14 @@ stateCollectionValue key values =
 
 stateItemValue :: Address -> Integer -> Integer -> Value
 stateItemValue address requestedBlock value =
+  object
+    [ "address_hash" .= hexAddress address
+    , "block_number" .= requestedBlock
+    , "value" .= value
+    ]
+
+codeItemValue :: Address -> Integer -> T.Text -> Value
+codeItemValue address requestedBlock value =
   object
     [ "address_hash" .= hexAddress address
     , "block_number" .= requestedBlock

@@ -8,6 +8,7 @@ module Handlers.Blockscout.API
   ) where
 
 import Blockchain.Data.Block (Block)
+import Blockchain.DB.CodeDB (HasCodeDB)
 import Blockchain.Data.DataDefs (AddressStateRef, LogDB, RawTransaction, TransactionResult)
 import Blockchain.Strato.Model.Keccak256 (Keccak256)
 import Control.Monad.Change.Alter (Selectable)
@@ -34,7 +35,8 @@ type API =
     )
 
 server ::
-  ( BlkLast.GetLastBlocks m
+  ( HasCodeDB m
+  , BlkLast.GetLastBlocks m
   , Selectable Block.BlocksFilterParams [Block] m
   , Selectable Transaction.TxsFilterParams [RawTransaction] m
   , Selectable AccountInfo.AccountsFilterParams [AddressStateRef] m

@@ -31,6 +31,7 @@ module Core.API
 import           BlockApps.Logging
 import           Blockchain.Data.Block
 import           Blockchain.Data.DataDefs
+import           Blockchain.DB.CodeDB
 import           Blockchain.Sequencer.Event (IngestEvent)
 import           Blockchain.Strato.Discovery.Data.Peer (HasPeerDB)
 import           Blockchain.Strato.Model.Keccak256
@@ -94,6 +95,7 @@ type MonadCoreAPI m =
     BlkLast.GetLastBlocks m,
     TxLast.GetLastTransactions m,
     HasVault m,
+    HasCodeDB m,
     Selectable Account.AccountsFilterParams [AddressStateRef] m,
     Selectable Block.BlocksFilterParams [Block] m,
     Selectable Keccak256 SourceMap m,

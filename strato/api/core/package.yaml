@@ -44,6 +44,7 @@ library:
     - binary
     - blockapps-data
     - blockapps-datadefs
+    - blockapps-mpdbs
     - blockDB
     - bytestring
     - clock
