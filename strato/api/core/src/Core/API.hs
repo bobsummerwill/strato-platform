@@ -43,6 +43,7 @@ import           Data.Source.Map
 import           Handlers.AccountInfo              hiding (API, server)
 import qualified Handlers.AccountInfo              as Account
 import           Handlers.BlkLast                  hiding (API, server)
+import qualified Handlers.Blockscout.API          as Blockscout
 import qualified Handlers.BlkLast                  as BlkLast
 import           Handlers.Block                    hiding (API, server)
 import qualified Handlers.Block                    as Block
@@ -78,6 +79,7 @@ type CoreAPI =
            :<|> Transaction.API
            :<|> TransactionResult.API
            :<|> TxLast.API
+           :<|> Blockscout.API
        )
 
 type MonadCoreAPI m =
@@ -114,3 +116,4 @@ coreApiServer =
     :<|> Transaction.server (Conf.txSizeLimit (networkConfig ethConf))
     :<|> TransactionResult.server
     :<|> TxLast.server
+    :<|> Blockscout.server

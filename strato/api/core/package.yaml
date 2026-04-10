@@ -10,6 +10,33 @@ dependencies:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Core.API
+    - Handlers.AccountInfo
+    - Handlers.BlkLast
+    - Handlers.Block
+    - Handlers.Blockscout.API
+    - Handlers.Blockscout.Blocks
+    - Handlers.Blockscout.ChainInfo
+    - Handlers.Blockscout.Logs
+    - Handlers.Blockscout.Receipts
+    - Handlers.Blockscout.State
+    - Handlers.Blockscout.Transactions
+    - Handlers.Metadata
+    - Handlers.Peers
+    - Handlers.QueuedTransactions
+    - Handlers.Stats
+    - Handlers.Storage
+    - Handlers.Transaction
+    - Handlers.TransactionResult
+    - Handlers.TxLast
+    - Settings
+    - SortDirection
+    - SQLM
+    - Versioning
+  other-modules:
+    - Handlers.Blockscout.Mapper
+    - Handlers.Blockscout.Types
   dependencies:
     - aeson
     - aeson-casing

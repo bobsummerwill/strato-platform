@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -15,6 +15,13 @@ library
       Handlers.AccountInfo
       Handlers.BlkLast
       Handlers.Block
+      Handlers.Blockscout.API
+      Handlers.Blockscout.Blocks
+      Handlers.Blockscout.ChainInfo
+      Handlers.Blockscout.Logs
+      Handlers.Blockscout.Receipts
+      Handlers.Blockscout.State
+      Handlers.Blockscout.Transactions
       Handlers.Metadata
       Handlers.Peers
       Handlers.QueuedTransactions
@@ -28,7 +35,8 @@ library
       SQLM
       Versioning
   other-modules:
-      Paths_core_api2
+      Handlers.Blockscout.Mapper
+      Handlers.Blockscout.Types
   hs-source-dirs:
       src
   build-depends:
