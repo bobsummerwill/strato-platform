@@ -53,19 +53,19 @@ codes StateRequest{requests} = do
 
 balanceValue :: (Selectable AccountsFilterParams [AddressStateRef] m) => StateLookup -> m Value
 balanceValue StateLookup{addressHash, blockNumber} = do
-  account <- lookupAccount addressHash
+  account <- lookupAccount addressHash blockNumber
   let balance = maybe 0 addressStateRefBalance account
   pure $ Mapper.stateItemValue addressHash blockNumber balance
 
 nonceValue :: (Selectable AccountsFilterParams [AddressStateRef] m) => StateLookup -> m Value
 nonceValue StateLookup{addressHash, blockNumber} = do
-  account <- lookupAccount addressHash
+  account <- lookupAccount addressHash blockNumber
   let nonce = maybe 0 addressStateRefNonce account
   pure $ Mapper.stateItemValue addressHash blockNumber nonce
 
 codeValue :: (HasCodeDB m, Selectable AccountsFilterParams [AddressStateRef] m) => StateLookup -> m Value
 codeValue StateLookup{addressHash, blockNumber} = do
-  account <- lookupAccount addressHash
+  account <- lookupAccount addressHash blockNumber
   code <- case account >>= addressStateRefCodeHash of
     Nothing -> pure "0x"
     Just codePtr -> do
@@ -73,9 +73,14 @@ codeValue StateLookup{addressHash, blockNumber} = do
       pure $ T.pack $ "0x" ++ format bytes
   pure $ Mapper.codeItemValue addressHash blockNumber code
 
-lookupAccount :: (Selectable AccountsFilterParams [AddressStateRef] m) => Address -> m (Maybe AddressStateRef)
-lookupAccount address = do
-  accounts <- getAccount' accountsFilterParams{_qaAddress = Just address}
+lookupAccount :: (Selectable AccountsFilterParams [AddressStateRef] m) => Address -> Integer -> m (Maybe AddressStateRef)
+lookupAccount address blockNumber = do
+  accounts <-
+    getAccount'
+      accountsFilterParams
+      { _qaAddress = Just address
+      , _qaMaxNumber = Just (fromIntegral blockNumber)
+      }
   pure $ case accounts of
     AddressStateRef' account : _ -> Just account
     [] -> Nothing
