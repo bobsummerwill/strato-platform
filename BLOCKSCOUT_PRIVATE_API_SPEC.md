@@ -267,6 +267,88 @@ Response:
 }
 ```
 
+### `POST /internal-transactions/by-block-number`
+
+Request:
+
+```json
+{
+  "block_numbers": [12]
+}
+```
+
+Response:
+
+```json
+{
+  "internal_transactions": [
+    {
+      "block_hash": "0xblock",
+      "block_number": 12,
+      "transaction_hash": "0xtx",
+      "transaction_index": 1,
+      "index": 0,
+      "trace_address": [],
+      "type": "call",
+      "call_type": "call",
+      "from_address_hash": "0xfrom",
+      "to_address_hash": "0xto",
+      "gas": 21000,
+      "gas_used": 20000,
+      "input": "0x1234",
+      "output": "0x5678",
+      "value": null
+    }
+  ],
+  "errors": []
+}
+```
+
+### `POST /internal-transactions/by-transaction`
+
+Request:
+
+```json
+[
+  {
+    "block_hash": "0xblock",
+    "block_number": 12,
+    "hash_data": "0xtx",
+    "transaction_index": 1
+  }
+]
+```
+
+Response:
+
+```json
+{
+  "internal_transactions": [
+    {
+      "block_hash": "0xblock",
+      "block_number": 12,
+      "transaction_hash": "0xtx",
+      "transaction_index": 1,
+      "index": 0,
+      "trace_address": [],
+      "type": "create",
+      "from_address_hash": "0xfrom",
+      "created_contract_address_hash": "0xcreated",
+      "gas": 50000,
+      "gas_used": 42000,
+      "init": "0x6000",
+      "value": 9
+    }
+  ],
+  "errors": []
+}
+```
+
+Notes:
+
+- these are synthetic root internal transactions derived from transaction and transaction-result data
+- they are useful for initial Blockscout indexing, but they do not provide nested call-tree parity
+
 ### `POST /receipts/by-block-number`
 
 Request:
