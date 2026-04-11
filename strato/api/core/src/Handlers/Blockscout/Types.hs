@@ -5,7 +5,9 @@ module Handlers.Blockscout.Types
   ( RangeRequest(..)
   , BlockNumbersRequest(..)
   , BlockHashesRequest(..)
+  , TransactionHashRequest(..)
   , TransactionHashesRequest(..)
+  , FirstTraceLookup(..)
   , StateLookup(..)
   , StateRequest(..)
   , LogSearchRequest(..)
@@ -39,8 +41,21 @@ data BlockHashesRequest = BlockHashesRequest
   }
   deriving (Eq, Show, Generic)
 
+data TransactionHashRequest = TransactionHashRequest
+  { requestedTransactionHash :: Keccak256
+  }
+  deriving (Eq, Show, Generic)
+
 data TransactionHashesRequest = TransactionHashesRequest
   { requestedTransactionHashes :: [Keccak256]
+  }
+  deriving (Eq, Show, Generic)
+
+data FirstTraceLookup = FirstTraceLookup
+  { lookupBlockHash :: Maybe Keccak256
+  , lookupBlockNumber :: Integer
+  , lookupHashData :: Keccak256
+  , lookupTransactionIndex :: Int
   }
   deriving (Eq, Show, Generic)
 
@@ -83,9 +98,16 @@ instance FromJSON BlockHashesRequest where
       <$> o .: "hashes"
       <*> o .:? "hydrated"
 
+instance FromJSON TransactionHashRequest where
+  parseJSON = withObject "TransactionHashRequest" $ \o ->
+    TransactionHashRequest <$> o .: "hash"
+
 instance FromJSON TransactionHashesRequest where
   parseJSON = withObject "TransactionHashesRequest" $ \o ->
     TransactionHashesRequest <$> o .: "hashes"
+
+instance FromJSON FirstTraceLookup where
+  parseJSON = genericParseJSON jsonOptions
 
 instance FromJSON StateLookup where
   parseJSON = genericParseJSON jsonOptions

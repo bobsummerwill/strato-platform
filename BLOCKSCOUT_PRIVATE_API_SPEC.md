@@ -188,6 +188,85 @@ Response:
 }
 ```
 
+### `POST /transactions/first-trace`
+
+Request:
+
+```json
+[
+  {
+    "block_hash": "0xblock",
+    "block_number": 12,
+    "hash_data": "0xtx",
+    "transaction_index": 1
+  }
+]
+```
+
+Response:
+
+```json
+{
+  "items": [
+    {
+      "block_hash": "0xblock",
+      "block_number": 12,
+      "first_trace": {
+        "transaction_hash": "0xtx",
+        "type": "call",
+        "call_type": "call",
+        "from_address_hash": "0xfrom",
+        "to_address_hash": "0xto",
+        "gas": 21000,
+        "gas_used": 20000,
+        "input": "0x1234",
+        "output": "0x5678",
+        "trace_address": [],
+        "index": 0,
+        "transaction_index": 1,
+        "value": 0
+      }
+    }
+  ],
+  "errors": []
+}
+```
+
+Notes:
+
+- this is a synthetic root trace derived from transaction and transaction-result data
+- it is meant to unblock Blockscout revert-reason and parent-trace paths, not full nested internal-call reconstruction
+
+### `POST /transactions/raw-traces`
+
+Request:
+
+```json
+{
+  "hash": "0xtx"
+}
+```
+
+Response:
+
+```json
+{
+  "traces": [
+    {
+      "transaction_hash": "0xtx",
+      "block_hash": "0xblock",
+      "block_number": 12,
+      "transaction_index": 1,
+      "status": "success",
+      "message": "",
+      "response": "0x5678",
+      "trace": "CALL 0xdeadbeef"
+    }
+  ],
+  "errors": []
+}
+```
+
 ### `POST /receipts/by-block-number`
 
 Request:
