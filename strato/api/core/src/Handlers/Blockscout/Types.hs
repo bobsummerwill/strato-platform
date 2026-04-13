@@ -20,6 +20,7 @@ import Blockchain.Strato.Model.Keccak256 (Keccak256)
 import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.Maybe (fromMaybe)
+import Data.OpenApi
 import GHC.Generics (Generic)
 
 data RangeRequest = RangeRequest
@@ -124,12 +125,52 @@ instance FromJSON LogSearchRequest where
       <*> (o .:? "address" >>= traverse parseAddressField)
       <*> o .:? "topics"
     where
-      parseAddressField value =
-        (parseJSON value)
-          <|> fmap pure (parseJSON value)
+      parseAddressField addressValue =
+        (parseJSON addressValue)
+          <|> fmap pure (parseJSON addressValue)
+
+instance ToSchema RangeRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema BlockNumbersRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema BlockHashesRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema TransactionHashRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema TransactionHashesRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema FirstTraceLookup where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema StateLookup where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema StateRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
+
+instance ToSchema LogSearchRequest where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema blockscoutSchemaOptions proxy
 
 hydratedOrTrue :: Maybe Bool -> Bool
 hydratedOrTrue = fromMaybe True
 
 jsonOptions :: Options
-jsonOptions = defaultOptions {fieldLabelModifier = camelTo2 '_'}
+jsonOptions = defaultOptions {Data.Aeson.fieldLabelModifier = camelTo2 '_'}
+
+blockscoutSchemaOptions :: SchemaOptions
+blockscoutSchemaOptions =
+  defaultSchemaOptions {Data.OpenApi.fieldLabelModifier = camelTo2 '_'}
