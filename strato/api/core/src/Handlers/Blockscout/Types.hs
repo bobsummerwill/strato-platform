@@ -16,11 +16,12 @@ module Handlers.Blockscout.Types
 
 import Blockchain.Strato.Model.Address (Address)
 import Blockchain.Strato.Model.ExtendedWord (Word256)
-import Blockchain.Strato.Model.Keccak256 (Keccak256)
+import Blockchain.Strato.Model.Keccak256 (Keccak256, stringKeccak256)
 import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.Maybe (fromMaybe)
 import Data.OpenApi
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 data RangeRequest = RangeRequest
@@ -96,19 +97,24 @@ instance FromJSON BlockNumbersRequest where
 instance FromJSON BlockHashesRequest where
   parseJSON = withObject "BlockHashesRequest" $ \o ->
     BlockHashesRequest
-      <$> o .: "hashes"
+      <$> (o .: "hashes" >>= mapM (withText "Keccak256" (either fail pure . parseKeccak256Text)))
       <*> o .:? "hydrated"
 
 instance FromJSON TransactionHashRequest where
   parseJSON = withObject "TransactionHashRequest" $ \o ->
-    TransactionHashRequest <$> o .: "hash"
+    TransactionHashRequest <$> (o .: "hash" >>= withText "Keccak256" (either fail pure . parseKeccak256Text))
 
 instance FromJSON TransactionHashesRequest where
   parseJSON = withObject "TransactionHashesRequest" $ \o ->
-    TransactionHashesRequest <$> o .: "hashes"
+    TransactionHashesRequest <$> (o .: "hashes" >>= mapM (withText "Keccak256" (either fail pure . parseKeccak256Text)))
 
 instance FromJSON FirstTraceLookup where
-  parseJSON = genericParseJSON jsonOptions
+  parseJSON = withObject "FirstTraceLookup" $ \o ->
+    FirstTraceLookup
+      <$> (o .:? "block_hash" >>= traverse (withText "Keccak256" (either fail pure . parseKeccak256Text)))
+      <*> o .: "block_number"
+      <*> (o .: "hash_data" >>= withText "Keccak256" (either fail pure . parseKeccak256Text))
+      <*> o .: "transaction_index"
 
 instance FromJSON StateLookup where
   parseJSON = genericParseJSON jsonOptions
@@ -121,7 +127,7 @@ instance FromJSON LogSearchRequest where
     LogSearchRequest
       <$> o .:? "from_block"
       <*> o .:? "to_block"
-      <*> o .:? "block_hash"
+      <*> (o .:? "block_hash" >>= traverse (withText "Keccak256" (either fail pure . parseKeccak256Text)))
       <*> (o .:? "address" >>= traverse parseAddressField)
       <*> o .:? "topics"
     where
@@ -170,6 +176,18 @@ hydratedOrTrue = fromMaybe True
 
 jsonOptions :: Options
 jsonOptions = defaultOptions {Data.Aeson.fieldLabelModifier = camelTo2 '_'}
+
+parseKeccak256Text :: T.Text -> Either String Keccak256
+parseKeccak256Text textValue =
+  case stringKeccak256 (stripHexPrefix textValue) of
+    Just hashValue -> Right hashValue
+    Nothing -> Left $ "error parsing Keccak256: " ++ show textValue
+
+stripHexPrefix :: T.Text -> String
+stripHexPrefix textValue =
+  case T.stripPrefix "0x" textValue <|> T.stripPrefix "0X" textValue of
+    Just stripped -> T.unpack stripped
+    Nothing -> T.unpack textValue
 
 blockscoutSchemaOptions :: SchemaOptions
 blockscoutSchemaOptions =
